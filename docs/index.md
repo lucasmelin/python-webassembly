@@ -93,13 +93,9 @@ class Machine:
                 self.push(args[0])
 ```
 
-If the op is `add`, then we:
+If the op is `add`, then we can implement it as follows:
 
-1. Pull the `right` thing off of the stack.
-2. Pull the `left` thing off of the stack.
-3. Put the `result` back _onto_ the stack.
-
-```python hl_lines="15-18"
+``` python hl_lines="15-18"
 class Machine:
     def __init__(self):
         self.items = []
@@ -115,10 +111,15 @@ class Machine:
             if op == 'const':
                 self.push(args[0])
             elif op == 'add':
-                right = self.pop()
-                left = self.pop()
-                self.push(left+right)
+                right = self.pop() # (1)
+                left = self.pop() # (2)
+                self.push(left+right) # (3)
 ```
+
+1.  Pull the `right` thing off of the stack.
+2.  Pull the `left` thing off of the stack.
+3.  Put the `result` back _onto_ the stack.
+
 
 We can implement `multiply` in much the same way.
 
@@ -215,7 +216,7 @@ So now we've got the start of a little machine. If we start playing around with 
 
 ```python hl_lines="2 4"
 class Machine:
-    def __init__(self, memsize=65536):
+    def __init__(self, memsize=65536): # (1)
         self.items = []
         self.memory = bytearray(memsize)
 
@@ -259,8 +260,9 @@ if __name__ == "__main__":
     example()
 ```
 
-!!! info
-    The most memory we could _possibly_ need is 64k. :wink:
+1. The most memory we could _possibly_ need is 64k. :wink:
+
+
 
 Then maybe we start adding some functions to `store` and `load` from memory:
 
@@ -321,7 +323,7 @@ The problem with loading and storing is that we'll have to make some decisions a
 So, for lack of a better alternative, let's just assume that _everything_ is a floating point number. We'll basically do some memory unpacking of a value.
 
 ```python hl_lines="1 9 12"
-import struct
+import struct # (1)
 
 class Machine:
     def __init__(self, memsize=65536):
@@ -337,8 +339,9 @@ class Machine:
 # Code below ommitted 👇
 ```
 
-!!! info
+1. !!! info
     If you haven't used the `struct` module before in python, it's a way of packing values.
+
 
 Now we can add some more instructions for `load` and `store`.
 
@@ -635,13 +638,17 @@ class Machine:
         return self.items.pop()
 
     def call(self, func, *args):
-        locals = dict(enumerate(args))  # {0: args[0], 1:args[1], 2: args[2]}
+        locals = dict(enumerate(args)) # (1)
         self.execute(func.code, locals)
         if func.returns:
             return self.pop()
 
 # Code below ommitted 👇
 ```
+
+1. `{0: args[0], 1:args[1], 2: args[2]}`
+
+
 
 We then modify our execute code to take in the locals and then build some more features around it such as operations for dealing with the local variables. For instance, we can create an operator for `local.get` that puts something onto the stack by looking it up in the locals dictionary.
 
@@ -1447,60 +1454,72 @@ WebAssembly also has a few more memory operators we have to implement.
 
 ```python
 def execute(self, instructions, locals):
-        for op, *args in instructions:
-            print(op, args, self.items)
-            if op in _const:
-                self.push(_const[op](args[0])) # lookup in the const table
-            elif op in _binary:
-                right = self.pop()
-                left = self.pop()
-                self.push(_binary[op](left, right))
-            elif op in _unary:
-                self.push(_unary[op](self.pop()))
-            elif op in _load:
-                addr = self.pop() + args[1] # WebAssembly introduces an offset
-                self.push(_load[op](self.memory[addr:addr+8])) # This is a hack because nothing is larger than 64 bits.
-            elif op in _store:
-                val = self.pop()
-                addr = self.pop() + args[1]
-                raw = _store[op](val)
-                self.memory[addr:addr+len(raw)] = raw
-            elif op == 'memory.size':
-                self.push(int32(len(self.memory)//65536))
-            elif op == 'memory.grow':
-                npages = self.pop()
-                self.memory.extend(bytes(npages*65536)) # Webassembly treats memory essentially as a big byte array that you grow and shrink.
-                self.push(int32(len(self.memory)//65536))
-            elif op == 'local.get':
-                self.push(locals[args[0]])
-            elif op == 'local.set':
-                locals[args[0]] = self.pop()
-            elif op == 'local.tee': # New operation where we pull an item off the stack without consuming it.
-                locals[args[0]] = self.items[-1]
-            elif op == 'drop': # Just pop something off of he stack and forget about it.
-                self.pop()
-            elif op == 'select': # Basically a ternary operation or a conditional
-                c = self.pop()
-                v2 = self.pop()
-                v1 = self.pop()
-                self.push(v1 if c else v2)
+    for op, *args in instructions:
+        print(op, args, self.items)
+        if op in _const:
+            self.push(_const[op](args[0])) # (1)
+        elif op in _binary:
+            right = self.pop()
+            left = self.pop()
+            self.push(_binary[op](left, right))
+        elif op in _unary:
+            self.push(_unary[op](self.pop()))
+        elif op in _load:
+            addr = self.pop() + args[1] # (2)
+            self.push(_load[op](self.memory[addr:addr+8])) # (3)
+        elif op in _store:
+            val = self.pop()
+            addr = self.pop() + args[1]
+            raw = _store[op](val)
+            self.memory[addr:addr+len(raw)] = raw
+        elif op == 'memory.size':
+            self.push(int32(len(self.memory)//65536))
+        elif op == 'memory.grow':
+            npages = self.pop()
+            self.memory.extend(bytes(npages*65536)) # (4)
+            self.push(int32(len(self.memory)//65536))
+        elif op == 'local.get':
+            self.push(locals[args[0]])
+        elif op == 'local.set':
+            locals[args[0]] = self.pop()
+        elif op == 'local.tee': # (5)
+            locals[args[0]] = self.items[-1]
+        elif op == 'drop': # (6)
+            self.pop()
+        elif op == 'select': # (7)
+            c = self.pop()
+            v2 = self.pop()
+            v1 = self.pop()
+            self.push(v1 if c else v2)
 
-            ...
+        ...
 
-            elif op == 'block':
-                try:
-                    self.execute(args[1], locals) # WebAssembly introduces a block tybe which we're going to ignore, but it changes the offset we're using on this line.
-                except Break as b:
-                    if b.level > 0:
-                        b.level -= 1
-                        raise
-            elif op == 'br_table': # You pass a table of indexes along with a default, used to implement switch statements
-                n = self.pop()
-                if n < len(args[0]):
-                    raise Break(args[0][n])
-                else:
-                    raise Break(args[1])
+        elif op == 'block':
+            try:
+                self.execute(args[1], locals) # (8)
+            except Break as b:
+                if b.level > 0:
+                    b.level -= 1
+                    raise
+        elif op == 'br_table': # (9)
+            n = self.pop()
+            if n < len(args[0]):
+                raise Break(args[0][n])
+            else:
+                raise Break(args[1])
 ```
+
+1. Lookup in the const table
+2. WebAssembly introduces an offset
+3. This is a hack because nothing is larger than 64 bits.
+4. WebAssembly treats memory essentially as a big byte array that you grow and shrink.
+5. New operation where we pull an item off the stack without consuming it.
+6. Just pop something off of the stack and forget about it.
+7. Basically a ternary operation or a conditional
+8. WebAssembly introduces a block type which we're going to ignore, but it changes the offset we're using on this line.
+9. You pass a table of indexes along with a default, used to implement switch statements
+
+
 
 Now the claim is that this code can run the rocket game, it can run the WebAssembly program written in Rust.
 
@@ -1511,15 +1530,14 @@ There's a lot of useful stuff inside the WebAssembly module. For starters, there
 This is basically going to be the basis for our WebAssembly piece. For instance, the imported functions are things that _have_ to be implemented in python or Javascript, it's the functions that the module doesn't know about.
 
 ```python
-import wadze    # Web Assembly Decoder
+import wadze
 module = wadze.parse_module(open('program.wasm', 'rb').read())
 
-# Build imported functions
 import math
 
-# These functions are imported by Wasm.  Must be implemented in the host
-# environment (Python).   These are listed in the required order.
-
+# These functions are imported by Wasm.
+# Must be implemented in the host environment (Python).
+# These are listed in the required order.
 def imp_Math_atan(x):
     return float64(math.atan(x))
 
@@ -1549,7 +1567,7 @@ def imp_sin(x):
 
 import machine
 
-# Declare as imported functions for our "machine"
+# (1)
 imported_functions = [
     machine.ImportFunction(1, 1, imp_Math_atan),
     machine.ImportFunction(0, 0, imp_clear_screen),
@@ -1562,25 +1580,25 @@ imported_functions = [
     machine.ImportFunction(1, 1, imp_sin),
 ]
 
-# Declare "defined" functions, functions that are in WebAssembly
+# (2)
 defined_functions = [ ]
 
-for typeidx, code in zip(module['func'], module['code']): # Take the two pieces from the module
-    functype = module['type'][typeidx]  # Signature
+for typeidx, code in zip(module['func'], module['code']): # (3)
+    functype = module['type'][typeidx]
     func = machine.Function(nparams = len(functype.params),
                             returns = bool(functype.returns),
                             code = wadze.parse_code(code).instructions)
     defined_functions.append(func)
 
-functions = imported_functions + defined_functions # Complete function table of python functions and Rust code functions
+functions = imported_functions + defined_functions # (4)
 
-# Declare "exported" functions
+# (5)
 exports = { exp.name: functions[exp.ref] for exp in module['export']
             if isinstance(exp, wadze.ExportFunction) }
 
-m = machine.Machine(functions, 20*65536)    # Hack on memory, the file does indicate how much memory the program needs but we're not going to bother
+m = machine.Machine(functions, 20*65536) # (6)
 
-# Initialize memory
+# (7)
 for data in module['data']:
     m.execute(data.offset, None)
     offset = m.pop()
@@ -1588,12 +1606,22 @@ for data in module['data']:
 
 from machine import float64, int32
 
-# Call something
 width = float64(800.0)
 height = float64(600.0)
 
-m.call(exports['resize'], width, height)    # Prayer, call the resize function in Rust
+m.call(exports['resize'], width, height) # (8)
 ```
+
+1. Declare as imported functions for our "machine"
+2. Declare "defined" functions, functions that are in WebAssembly
+3. Take the two pieces from the module
+4. Complete function table of python functions and Rust code functions
+5. Declare "exported" functions
+6. Hack on memory, the file does indicate how much memory the program needs but we're not going to bother
+7. Initialize memory
+8.  Call the resize function in Rust :pray:
+
+
 
 Our program is doing something at this point, it's not crashing.
 
@@ -1672,7 +1700,7 @@ while True:
 
 Now we want to play the game, but we didn't put any keybindings in!
 
-That's not hard to add - we just check for different keys, and then based on those keys, we call more Rust funtions to do things like toggle shooting, turn left, etc.
+That's not hard to add - we just check for different keys, and then based on those keys, we call more Rust functions to do things like toggle shooting, turn left, etc.
 
 ```python
 import pygame
@@ -1754,6 +1782,6 @@ If you're looking for some weird, crazy project to work on that's really super i
     1. [The WebAssembly spec](https://webassembly.github.io/spec/)
     2. [Almar Klein's EuroPython 2018 talk](www.youtube.com/watch?v=u2kKxmb9BWs).
     Highly recommended. He does other neat stuff with Rocket.
-    3. [pyodide](github.com/iodide-project/pyodide) - Scientific Stack on Web Assembly
-    4. [Pure Python Compiler Infrastructure (PPCI)](https://ppci.readthedocs.io)
-    5. [Wasmer](https://wasmer.io)
+    1. [pyodide](github.com/iodide-project/pyodide) - Scientific Stack on Web Assembly
+    2. [Pure Python Compiler Infrastructure (PPCI)](https://ppci.readthedocs.io)
+    3. [Wasmer](https://wasmer.io)

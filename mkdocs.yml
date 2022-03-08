@@ -1,4 +1,6 @@
-site_name: My Docs
+site_name: A Talk Near the Future of Python
+extra_css:
+  - stylesheets/extra.css
 theme:
   name: material
   palette:
@@ -11,6 +13,7 @@ theme:
   features:
     - navigation.top
     - content.code.annotate
+
 markdown_extensions:
   - abbr
   - admonition
@@ -26,9 +29,19 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.superfences
   - pymdownx.tabbed
+
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
+
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+  - pymdownx.tabbed:
+      alternate_style: true
 
 plugins:
   - search
