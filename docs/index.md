@@ -1,5 +1,7 @@
 # David Beazley - A Talk Near the Future of Python (a.k.a., Dave live-codes a WebAssembly Interpreter)
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/r-A78RgMhZU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 When you start working with machines, you start coming across a lot of different structures. One of the things you might come across is a [*stack*](https://en.wikipedia.org/wiki/Stack_(abstract_data_type)).
 
 A stack is actually really easy to implement in python, you start with a list and then a stack has two operations on it - a _"push items"_ where we just append something onto the stack, and a _"pop items"_ where we just return something coming back.
