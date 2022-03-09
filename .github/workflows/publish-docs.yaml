@@ -9,9 +9,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - uses: iterative/setup-cml@v1
-
+      
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
@@ -46,4 +44,4 @@ jobs:
         run: |
           source .venv/bin/activate
 
-          mkdocs gh-deploy
+          mkdocs gh-deploy --force
