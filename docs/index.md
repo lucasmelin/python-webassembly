@@ -4,7 +4,20 @@
 
 When you start working with machines, you start coming across a lot of different structures. One of the things you might come across is a [*stack*](https://en.wikipedia.org/wiki/Stack_(abstract_data_type)).
 
-A stack is actually really easy to implement in python, you start with a list and then a stack has two operations on it - a _"push items"_ where we just append something onto the stack, and a _"pop items"_ where we just return something coming back.
+```mermaid
+flowchart LR
+    subgraph STACK
+        1 o--o 2
+        2 o--o 3
+        3 o--o 4
+    end
+
+    Push o--> 1
+    1 --> Pop
+```
+
+
+A stack is actually really easy to implement in python, you start with a list and then a stack has two operations on it - a _"push items"_ where we just append something onto the stack, and a _"pop items"_ where we just return something back from the stack.
 
 ```python
 class Stack:
@@ -342,7 +355,7 @@ class Machine:
 ```
 
 1. !!! info
-    If you haven't used the `struct` module before in python, it's a way of packing values.
+    If you haven't used the `struct` module before in python, it's a way of packing values. [https://docs.python.org/3/library/struct.html](https://docs.python.org/3/library/struct.html)
 
 
 Now we can add some more instructions for `load` and `store`.
